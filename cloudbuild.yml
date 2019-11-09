@@ -1,0 +1,44 @@
+steps:
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull gcr.io/$PROJECT_ID/imgjoin-builder || exit 0
+    waitFor: ['-']
+    id: 'pull-builder'
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull gcr.io/$PROJECT_ID/imgjoin || exit 0
+    waitFor: ['-']
+    id: 'pull-app'
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/imgjoin-builder'
+      - '--cache-from'
+      - 'gcr.io/$PROJECT_ID/imgjoin-builder'
+      - '--target'
+      - 'builder'
+      - '.'
+    waitFor: ['pull-builder']
+    id: 'build-builder'
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/imgjoin'
+      - '--cache-from'
+      - 'gcr.io/$PROJECT_ID/imgjoin-builder'
+      - '--cache-from'
+      - 'gcr.io/$PROJECT_ID/imgjoin'
+      - '.'
+    waitFor: ['build-builder']
+    id: 'build-app'
+images:
+  - 'gcr.io/$PROJECT_ID/imgjoin-builder'
+  - 'gcr.io/$PROJECT_ID/imgjoin'
